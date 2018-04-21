@@ -70,8 +70,13 @@ for(i=0;i<n-k+1;++i)
 
                         int leftEdge=(int)(leftPoint.x-1);
                         int bottomEdge=(int)(bottomPoint.y-1);
-
+			
+			printf("\n%d %d\n",leftEdge,bottomEdge);
                         Rpoints=getAboveRightPoints(i,j,sortedX,sortedY,n,&totalpoints);
+			printf("\nTotal Points:%d\n",totalpoints);
+			printf("\nAbove Points:\n");
+			printArray(Rpoints,totalpoints);
+			
                         if(totalpoints<k)
                                 continue;
                         area=getArea(Rpoints,n,leftEdge,bottomEdge,&totalpoints);
@@ -88,7 +93,7 @@ for(i=0;i<n-k+1;++i)
                 }
         }
 
-        printf("\nMinimum Area:%d",minArea);
+        printf("\nMinimum Area:%d\n",minArea);
 
 
 return 0;

@@ -137,7 +137,9 @@ Point2D* getAboveRightPoints(int startx,int starty,Point2D* ptrx,Point2D* ptry,i
         //allocate memory for all uncommon points
         totalpoint=(len-startx)+(len-starty)-count;
         printf("\n Value- %d",totalpoint);
-
+	
+	*currentPoint=totalpoint;
+	
         temp=(Point2D*)malloc(totalpoint*sizeof(Point2D));
         for(i=startx;i<len;i++)
         {
