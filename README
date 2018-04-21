@@ -7,4 +7,4 @@ Jave Implementation Available online -
 https://ideone.com/139C7A
 
 Implemented C language and then use cuda library to implement parallel execution and 
-verified code output on NVIDIA tx1 board. 
+verify code output on NVIDIA tx1 board. 
