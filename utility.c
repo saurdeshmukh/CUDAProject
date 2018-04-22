@@ -114,49 +114,45 @@ Point2D* sortArray(int x,Point2D *ptr,int n)
 //////////GET RIGHT-TOP points from given line//////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
 Point2D* getAboveRightPoints(int startx,int starty,Point2D* ptrx,Point2D* ptry,int len,int *currentPoint)
-{       
-        int k=0;
-        int i,j;
-        int count=0;
-	int totalpoint=*currentPoint;
-        Point2D* temp; 
-        printf("Inside Function"); 
-        //find the value of points common in sortedX and sortedY array
-        for(i=startx;i<len;i++)
-        {       
-                for(j=starty;j<len;j++)
-                {       
-                        if(ptrx[i].x==ptry[j].x && ptrx[i].y==ptry[j].y)
-                        {       
-                                ptry[j].x=100;
-                                ptry[j].y=100;
-                                count++;
-                        }
-                }
-        }
-        //allocate memory for all uncommon points
-        totalpoint=(len-startx)+(len-starty)-count;
-        printf("\n Value- %d",totalpoint);
-	
-	*currentPoint=totalpoint;
-	
-        temp=(Point2D*)malloc(totalpoint*sizeof(Point2D));
-        for(i=startx;i<len;i++)
-        {
-                temp[k].x=ptrx[i].x;
-                temp[k].y=ptrx[i].y;
-                k++;
-        }
+{
+    int k=0;
+    int i,j;
+    int count=0;
+    int totalpoint=*currentPoint;
+    Point2D* temp;
+    printf("Inside Function:%d",len);
+    //find the value of points common in sortedX and sortedY array
+    for(i=startx;i<len;i++)
+    {
         for(j=starty;j<len;j++)
         {
-                if(ptry[j].x!=100 && ptry[j].y!=100)
-                {
-                        temp[k].x=ptry[j].x;
-                        temp[k].y=ptry[j].y;
-                        k++;
-                }
+            if(ptrx[i].x==ptry[j].x && ptrx[i].y==ptry[j].y)
+            {
+                count++;
+            }
         }
-
-        return temp;
+    }
+    //allocate memory for all uncommon points
+    printf("\nStart i - %d start j - %d Count - %d",startx,starty,count);
+    
+    totalpoint=count;
+    printf("\n Value- %d",totalpoint);
+    
+    *currentPoint=totalpoint;
+    
+    temp=(Point2D*)malloc(totalpoint*sizeof(Point2D));
+    for(j=starty;j<len;j++)
+    {
+        for(i=startx;i<len;i++)
+        {
+            if(ptry[j].x==ptrx[i].x && ptry[j].y==ptrx[i].y)
+            {
+                temp[k].x=ptry[j].x;
+                temp[k].y=ptry[j].y;
+                k++;
+            }
+        }
+    }
+    
+    return temp;
 }
-
