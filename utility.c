@@ -120,7 +120,7 @@ Point2D* getAboveRightPoints(int startx,int starty,Point2D* ptrx,Point2D* ptry,i
     int count=0;
     int totalpoint=*currentPoint;
     Point2D* temp;
-    printf("Inside Function:%d",len);
+   // printf("Inside Function:%d",len);
     //find the value of points common in sortedX and sortedY array
     for(i=startx;i<len;i++)
     {
@@ -129,14 +129,15 @@ Point2D* getAboveRightPoints(int startx,int starty,Point2D* ptrx,Point2D* ptry,i
             if(ptrx[i].x==ptry[j].x && ptrx[i].y==ptry[j].y)
             {
                 count++;
+		break;
             }
         }
     }
     //allocate memory for all uncommon points
-    printf("\nStart i - %d start j - %d Count - %d",startx,starty,count);
+   // printf("\nStart i - %d start j - %d Count - %d",startx,starty,count);
     
     totalpoint=count;
-    printf("\n Value- %d",totalpoint);
+    //printf("\n Value- %d",totalpoint);
     
     *currentPoint=totalpoint;
     
@@ -150,6 +151,7 @@ Point2D* getAboveRightPoints(int startx,int starty,Point2D* ptrx,Point2D* ptry,i
                 temp[k].x=ptry[j].x;
                 temp[k].y=ptry[j].y;
                 k++;
+		break;
             }
         }
     }
