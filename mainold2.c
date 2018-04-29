@@ -8,7 +8,7 @@ void printArray(Point2D*ptr,int n)
     int i=0;
     for(i=0;i<n;i++)
     {
-        printf("Point %d - X: %d , Y: %d\n",i+1,ptr[i].x,ptr[i].y);
+//        printf("Point %d - X: %d , Y: %d\n",i+1,ptr[i].x,ptr[i].y);
         
     }
     
@@ -53,6 +53,30 @@ int main()
     points[6].y=3;
     points[7].x=2;
     points[7].y=4;
+    points[8].x=2;
+    points[8].y=2;
+    points[9].x=6;
+    points[9].y=9;
+    points[10].x=6;
+    points[10].y=2;
+    points[11].x=0;
+    points[11].y=9;
+    points[12].x=4;
+    points[12].y=9;
+    points[13].x=8;
+    points[13].y=3;
+    points[14].x=7;
+    points[14].y=2;
+    points[15].x=5;
+    points[15].y=4;
+    points[16].x=0;
+    points[16].y=6;
+    points[17].x=3;
+    points[17].y=5;
+    points[18].x=9;
+    points[18].y=0;
+    points[19].x=5;
+    points[19].y=4;
 	
     printf("\nPoints:\n");
     printArray(points,n);
@@ -78,13 +102,13 @@ int main()
             
             int leftEdge=(int)(leftPoint.x-1);
             int bottomEdge=(int)(bottomPoint.y-1);
-            printf("\n i value-%d j Value-%d",i,j);
-            printf("\nLeftPoint x- %d y-%d",leftPoint.x,leftPoint.y);
-            printf("\nBottomPoint x-%d y-%d",bottomPoint.x,bottomPoint.y);
-            printf("\nLeft-%d bottom-%d\n",leftEdge,bottomEdge);
-            Rpoints=getAboveRightPoints(i,j,sortedX,sortedY,n,&totalpoints);
-            printf("\nTotal Points:%d\n",totalpoints);
-            printf("\nAbove Points:\n");
+             //printf("\n i value-%d j Value-%d",i,j);
+            // printf("\nLeftPoint x- %d y-%d",leftPoint.x,leftPoint.y);
+            // printf("\nBottomPoint x-%d y-%d",bottomPoint.x,bottomPoint.y);
+            // printf("\nLeft-%d bottom-%d\n",leftEdge,bottomEdge);
+   	     Rpoints=getAboveRightPoints(i,j,sortedX,sortedY,n,&totalpoints);
+	    // printf("\nTotal Points:%d\n",totalpoints);
+            // printf("\nAbove Points:\n");
             printArray(Rpoints,totalpoints);
             
             if(totalpoints<k)
@@ -92,8 +116,22 @@ int main()
             area=getArea(Rpoints,n,leftEdge,bottomEdge,&totalpoints);
             sortedArea(area,&totalpoints);
             currentArea=area[k-1];
-            printf("\nCurrentArea-%d",currentArea);
-            if(minArea>currentArea)
+           // printf("\nCurrentArea-%d",currentArea);
+
+           if (i==4 &&j==5)
+           {
+             printf("\n i value-%d j Value-%d",i,j);
+             printf("\nLeftPoint x- %d y-%d",leftPoint.x,leftPoint.y);
+             printf("\nBottomPoint x-%d y-%d",bottomPoint.x,bottomPoint.y);
+             printf("\nLeft-%d bottom-%d\n",leftEdge,bottomEdge);
+             printf("\nTotal Points:%d\n",totalpoints);
+             printf("\nAbove Points:\n");
+	     for(int m=0;m<totalpoints;m++)
+		printf("\n-%d %d",Rpoints[m].x,Rpoints[m].y);
+	     for(int m=0;m<totalpoints;m++)
+            	printf("\nCurrentArea-%d",area[m]);
+           } 
+	   if(minArea>currentArea)
             {
                 minArea=currentArea;
                 corner.x=leftEdge;
