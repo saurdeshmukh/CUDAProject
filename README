@@ -2,6 +2,15 @@
 ######### K-Bouding box Algorithm implemnted in CUDA ########
 #############################################################
 
+Problem - Finding minimum area of square which will contain K points 
+out of n points in 2-D surface
+
+
+Jave Implementation Available online - 
+https://ideone.com/139C7A
+
+Implemented C language and then use cuda library to implement parallel execution and 
+verify code output on NVIDIA tx1 board.
 
 
 1.CPU Execution code - 
