@@ -5,7 +5,7 @@
 #define BOUND 100
 #include<time.h>
 #include<quicksort.h>
-
+#define BLOCKNUM 3
 
 __constant__ Point2D sortedX[maxWIDTH]; 
 __constant__ Point2D sortedY[maxWIDTH];
@@ -203,6 +203,7 @@ __global__ void k_bounding_algorithm(Point2D * points,int n,int k,int *finalArea
 	int totalpoints=0;
         minArea[threadId]=0;
 	minArea[threadId]=INT_MAX;
+	*finalArea=INT_MAX;
 	__syncthreads();
 	leftPoint=sortedX[i];
         bottomPoint=sortedY[j];
@@ -215,15 +216,10 @@ __global__ void k_bounding_algorithm(Point2D * points,int n,int k,int *finalArea
                 {
 			area=getArea(Rpoints,n,leftEdge,bottomEdge,&totalpoints);
             		sortedArea(area,&totalpoints);
-			minArea[threadId]=area[k-1];
+			atomicMin(finalArea,area[k-1]);
 		}
 	}
-	__syncthreads();
-	if(threadIdx.x ==0)
-        {
-                *finalArea=minAreaFunction(minArea);
-        }
-    }
+   } 
 
 }
 
@@ -407,7 +403,7 @@ int main(void)
  
    cudaDeviceSynchronize();
   
-    int blocksPerGrid = 3;
+    int blocksPerGrid = BLOCKNUM;
     dim3 threadsPerBlock (1024,1,1);
     printf("CUDA kernel launch with %d blocks of 1024 threads\n", blocksPerGrid);
     cudaEventRecord(seq_start);
