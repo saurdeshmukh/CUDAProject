@@ -1,10 +1,35 @@
-#############################################################################
-Problem - Finding minimum area of square which will contain K points 
-out of n points in 2-D surface
+#############################################################
+######### K-Bouding box Algorithm implemnted in CUDA ########
+#############################################################
 
 
-Jave Implementation Available online - 
-https://ideone.com/139C7A
 
-Implemented C language and then use cuda library to implement parallel execution and 
-verify code output on NVIDIA tx1 board. 
+1.CPU Execution code - 
+	Folder C_Implementation
+	command : gcc -o kSqBoxAlgorithm kSqBoxAlgorithm.c randomPoints.c utility.c  
+	execute : ./kSqBoxAlgorithm
+			
+
+2.CUDA execution code -
+	A)Folder normalGPU (simple parallel execution with global memory) 
+	command : make
+	execute : ./kSqBoxAlgorithm
+
+	B)Folder sharedGPU (parallel execution with shared memory)
+	command : make 
+	execute : ./kSqBoxAlgorithm
+
+	C)Folder atomicSharedGPU (parallel execution with atomic operation and shared memory)
+	command : make
+	execute :./kSqBoxAlgorithm
+	
+	D)Folder dynamicConstantGPU (parallel execution with dynamic parallelism,Constant memory)
+	command : make
+        execute :./kSqBoxAlgorithm
+
+
+
+
+
+
+	

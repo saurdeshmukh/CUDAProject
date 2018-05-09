@@ -4,7 +4,7 @@
 
 void getRandomInputPoints(int n,Point2D * ptr)
 {       
-	srand(time(0));
+	srand(0);
         int i=0;
         //int halfBound=BOUND/2;
         int pointx=0,pointy=0;

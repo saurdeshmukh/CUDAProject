@@ -1,7 +1,7 @@
 #include<stdio.h>
 #include<limits.h>
 
-#define BOUND 5
+#define BOUND 100
 #pragma once
 typedef struct{
 int x;

@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include<limits.h>
 #include <cuda_runtime.h>
-//#include <thrust/sort.h>
-#define maxWIDTH 12
+#define maxWIDTH 300
+#define BOUND 100
+#include<time.h>
 
 typedef struct
 {
@@ -10,6 +11,44 @@ int x;
 int y;
 }Point2D;
 
+__host__ void getRandomInputPoints(int n,Point2D * ptr)
+{
+        srand(0);
+        int i=0;
+        int pointx=0,pointy=0;
+        for(i=0;i<n;i++)
+        {
+                pointx=rand()%BOUND;
+                ptr->x=pointx;
+                pointy=rand()%BOUND;
+                ptr->y=pointy;
+                ptr++;
+        }
+}
+
+__host__ void printArray(Point2D*ptr,int n)
+{
+    int i=0;
+    for(i=0;i<n;i++)
+    {
+        printf("Point %d - X: %d , Y: %d\n",i+1,ptr[i].x,ptr[i].y);
+
+    }
+
+}
+__device__ int  minAreaFunction(int *ptr)
+{
+	int minArea=INT_MAX;
+	for(int i=0;i<(maxWIDTH*maxWIDTH);i++)
+		{
+			if(ptr[i]<minArea && ptr[i]!=0)
+			{
+				minArea=ptr[i];
+			}
+		}
+	return minArea;
+
+}
 __device__ void sortedArea(int *area,int *currentPoint)
 {       
         int totalpoint=*currentPoint;
@@ -30,7 +69,8 @@ __device__ void sortedArea(int *area,int *currentPoint)
         }
 }
 
-__device__ int * getAreaWithAxis(Point2D *ptr,int len,int leftEdge,int bottomEdge,int *currentPoint)
+
+__device__ int * getArea(Point2D *ptr,int len,int leftEdge,int bottomEdge,int *currentPoint)
 {
         int totalpoint=*currentPoint;
         int *area=(int*)malloc(totalpoint * sizeof(int));
@@ -54,7 +94,7 @@ __device__ int * getAreaWithAxis(Point2D *ptr,int len,int leftEdge,int bottomEdg
 
 __device__ Point2D* getAboveRightPoints(int startx,int starty,Point2D* ptrx,Point2D* ptry,int len,int *currentPoint)
 {
-    int k=0;
+	 int k=0;
     int i,j;
     int count=0;
     int totalpoint=*currentPoint;
@@ -67,12 +107,14 @@ __device__ Point2D* getAboveRightPoints(int startx,int starty,Point2D* ptrx,Poin
             if(ptrx[i].x==ptry[j].x && ptrx[i].y==ptry[j].y)
             {
                 count++;
-                break;
+		break;
             }
         }
     }
-
+    
     totalpoint=count;
+    
+    
     temp=(Point2D*)malloc(totalpoint*sizeof(Point2D));
     for(j=starty;j<len;j++)
     {
@@ -80,20 +122,21 @@ __device__ Point2D* getAboveRightPoints(int startx,int starty,Point2D* ptrx,Poin
         {
             if(ptry[j].x==ptrx[i].x && ptry[j].y==ptrx[i].y)
             {
-                check=0;
-                for(int m=0;m<k;m++)
-                        if(ptry[j].x==temp[m].x && ptry[j].y==temp[m].y)
-                                check=1;
-                if(check==0)
-                {
-                        temp[k].x=ptry[j].x;
-                        temp[k].y=ptry[j].y;
-                        k++;
-                        break;
-                }
+		check=0;
+		for(int m=0;m<k;m++)
+			if(ptry[j].x==temp[m].x && ptry[j].y==temp[m].y)
+				check=1;
+		if(check==0)
+		{
+                	temp[k].x=ptry[j].x;
+                	temp[k].y=ptry[j].y;
+                	k++;
+			break;
+		}
             }
         }
     }
+	
     *currentPoint=k;
     return temp;
 }
@@ -127,6 +170,7 @@ __device__ void sortingbyAxis(Point2D *points,Point2D *sorted,int n,int x)
                                         }
                                 }
         }
+	//sort by y co-ordinate
         else
         {       
                 for(i=0;i<n-1;i++)
@@ -148,22 +192,21 @@ __device__ void sortingbyAxis(Point2D *points,Point2D *sorted,int n,int x)
 }
 __global__ void k_bounding_algorithm(Point2D * points,int n,int k,int *finalArea)
 {
-	int i=threadIdx.x;
-	int j=threadIdx.y;
-
-
-	//Optimization  - Used Shared memory 
-
-	__shared__ Point2D sortedX[maxWIDTH];
-	__shared__ Point2D sortedY[maxWIDTH];
+	int threadId = blockDim.x*blockIdx.x + threadIdx.x;
+        __shared__ Point2D sortedX[maxWIDTH];
+        __shared__ Point2D sortedY[maxWIDTH];
+	if(threadId < ((n-k+1)*(n-k+1)))
+	{
+	int i=threadId / (n-k+1);
+	int j=threadId %(n-k+1);
 	Point2D bottomPoint;
         Point2D leftPoint;
         Point2D *Rpoints=NULL;
         int *area;
 	int totalpoints=0;
-        
-	if(threadIdx.x==0 && threadIdx.y==0)
+	if(threadIdx.x==0)
 	{
+		*finalArea=INT_MAX;
 		sortingbyAxis(points,sortedX,n,1);
 		sortingbyAxis(points,sortedY,n,0);
 	}
@@ -177,12 +220,18 @@ __global__ void k_bounding_algorithm(Point2D * points,int n,int k,int *finalArea
             Rpoints=getAboveRightPoints(i,j,sortedX,sortedY,n,&totalpoints);
 		if(totalpoints>=k)
                 {
-			area=getAreaWithAxis(Rpoints,n,leftEdge,bottomEdge,&totalpoints);
+			area=getArea(Rpoints,n,leftEdge,bottomEdge,&totalpoints);
             		sortedArea(area,&totalpoints);
-			//Optimization - Used atomic operation to find the minimum area
-			atomicMin(finalArea,area[k-1]);
+			int kVal=atomicMin(finalArea,area[k-1]);
 		}
 	}
+	if(threadIdx.x==0)
+	{
+		free(Rpoints);
+		free(area);
+	}
+    }
+
 }
 
 int main(void)
@@ -190,9 +239,18 @@ int main(void)
     cudaError_t err = cudaSuccess;
     cudaEvent_t seq_start,seq_stop;    
 
-    int n=12;
-    int k=8;
-    int *h_minArea=NULL;
+    int n=0;
+    int k=0;
+    
+    printf("\nEnter Number of Points in plane(n):");
+    fflush(stdin);
+    scanf("%d",&n);
+    printf("\nEnter Number of Points insie square(k):");
+    fflush(stdin);
+    scanf("%d",&k);
+
+   int *h_minArea=(int*)malloc(sizeof(int));
+	*h_minArea=INT_MAX;;
     
     cudaEventCreate(&seq_start);
     cudaEventCreate(&seq_stop);
@@ -204,31 +262,11 @@ int main(void)
         fprintf(stderr, "Failed to allocate host vectors!\n");
         exit(EXIT_FAILURE);
     }
-    h_points[0].x=5;
-    h_points[0].y=8;
-    h_points[1].x=7;
-    h_points[1].y=3;
-    h_points[2].x=4;
-    h_points[2].y=4;
-    h_points[3].x=4;
-    h_points[3].y=6;
-    h_points[4].x=8;
-    h_points[4].y=8;
-    h_points[5].x=9;
-    h_points[5].y=3;
-    h_points[6].x=7;
-    h_points[6].y=3;
-    h_points[7].x=2;
-    h_points[7].y=4;
-    h_points[8].x=2;
-    h_points[8].y=2;
-    h_points[9].x=6;
-    h_points[9].y=9;
-    h_points[10].x=6;
-    h_points[10].y=2;
-    h_points[11].x=0;
-    h_points[11].y=9;
-	
+
+    getRandomInputPoints(n,h_points);
+
+    printf("\nPoints:\n");
+    printArray(h_points,n);
     h_minArea = (int*)malloc(sizeof(int));
 
     Point2D *d_points = NULL;
@@ -248,10 +286,11 @@ int main(void)
         exit(EXIT_FAILURE);
     }
     
-    int *d_minArea = NULL;
+
+   int *d_minArea = NULL;
     err = cudaMalloc((void**)&d_minArea,sizeof(int));
 
-    if (err != cudaSuccess)
+ if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to allocate device vector A (error code %s)!\n", cudaGetErrorString(err));
         exit(EXIT_FAILURE);
@@ -265,9 +304,10 @@ int main(void)
         exit(EXIT_FAILURE);
     }
 
-    int blocksPerGrid = 1;
-    dim3 threadsPerBlock (n-k+1,n-k+1,1);
-    printf("CUDA kernel launch with %d blocks of %d threads\n", blocksPerGrid, (n-k+1)*(n-k+1));
+
+    int blocksPerGrid = 3;
+    dim3 threadsPerBlock (1024,1,1);
+    printf("CUDA kernel launch with %d blocks of 1024 threads\n", blocksPerGrid);
     cudaEventRecord(seq_start);
     k_bounding_algorithm<<<blocksPerGrid,threadsPerBlock>>>(d_points,n,k,d_minArea);
     cudaEventRecord(seq_stop);
@@ -297,7 +337,7 @@ int main(void)
         exit(EXIT_FAILURE);
      }
     
-    printf("\nMinimum area of square containing %d points out of %d points is:  %d\n",k,n,*h_minArea);
+    printf("\n%d\n",*h_minArea);
     
     err = cudaFree(d_minArea);
 

@@ -1,7 +1,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include"randomPoints.h"
-
+#include <time.h>
 
 void printArray(Point2D*ptr,int n)
 {
@@ -27,6 +27,7 @@ int main()
     int currentArea=0;
     int minArea=INT_MAX;
     int totalpoints=0;
+    clock_t time;
     
     printf("\nEnter Number of Points in plane(n):");
     fflush(stdin);
@@ -40,6 +41,7 @@ int main()
     printf("\nPoints:\n");
     printArray(points,n);
     
+    time =clock();
     sortedX=sortArray(1,points,n);
     sortedY=sortArray(0,points,n);
     
@@ -68,12 +70,17 @@ int main()
                 corner.x=leftEdge;
                 corner.y=bottomEdge;
             }
-            
-            
+//        printf("\ni:%d j: %d currentArea: %d\n",i,j,currentArea);            
+        if(i ==5 && j == 6)
+	{
+		for(int d=0;d<totalpoints;d++)
+		printf("\nX : %d  Y: %d",Rpoints[d].x,Rpoints[d].y);
+	}    
         }
     }
-    
+    time = clock() - time;
     printf("\nMinimum Area:%d\n",minArea);
+    printf("\ntime :%f\n",((float)time)/CLOCKS_PER_SEC);
     
     
     return 0;
