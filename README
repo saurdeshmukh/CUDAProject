@@ -19,23 +19,11 @@ verify code output on NVIDIA tx1 board.
 	execute : ./kSqBoxAlgorithm
 			
 
-2.CUDA execution code -
-	A)Folder normalGPU (simple parallel execution with global memory) 
-	command : make
-	execute : ./kSqBoxAlgorithm
-
-	B)Folder sharedGPU (parallel execution with shared memory)
-	command : make 
-	execute : ./kSqBoxAlgorithm
-
-	C)Folder atomicSharedGPU (parallel execution with atomic operation and shared memory)
-	command : make
-	execute :./kSqBoxAlgorithm
-	
-	D)Folder dynamicConstantGPU (parallel execution with dynamic parallelism,Constant memory)
+2.CUDA execution code -	
+	Folder dynamicConstantGPU (parallel execution with dynamic parallelism,Constant memory)
 	command : make
         execute :./kSqBoxAlgorithm
-
+	(maxWIDTH macro used to allocate Constant memory in runtime,so value of n should be 1-maxWIDTH)
 
 
 

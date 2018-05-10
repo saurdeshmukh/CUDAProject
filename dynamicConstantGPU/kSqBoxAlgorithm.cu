@@ -2,14 +2,12 @@
 #include<limits.h>
 #include <cuda_runtime.h>
 #define maxWIDTH 300
-#define BOUND 100
+#define BOUND 200
 #include<time.h>
+#include<quicksort.h>
 
-typedef struct
-{
-int x;
-int y;
-}Point2D;
+__constant__ Point2D sortedX[maxWIDTH]; 
+__constant__ Point2D sortedY[maxWIDTH];
 
 __host__ void getRandomInputPoints(int n,Point2D * ptr)
 {
@@ -193,8 +191,6 @@ __device__ void sortingbyAxis(Point2D *points,Point2D *sorted,int n,int x)
 __global__ void k_bounding_algorithm(Point2D * points,int n,int k,int *finalArea)
 {
 	int threadId = blockDim.x*blockIdx.x + threadIdx.x;
-        __shared__ Point2D sortedX[maxWIDTH];
-        __shared__ Point2D sortedY[maxWIDTH];
 	if(threadId < ((n-k+1)*(n-k+1)))
 	{
 	int i=threadId / (n-k+1);
@@ -204,12 +200,7 @@ __global__ void k_bounding_algorithm(Point2D * points,int n,int k,int *finalArea
         Point2D *Rpoints=NULL;
         int *area;
 	int totalpoints=0;
-	if(threadIdx.x==0)
-	{
-		*finalArea=INT_MAX;
-		sortingbyAxis(points,sortedX,n,1);
-		sortingbyAxis(points,sortedY,n,0);
-	}
+	*finalArea=INT_MAX;
 	__syncthreads();
 	leftPoint=sortedX[i];
         bottomPoint=sortedY[j];
@@ -221,39 +212,45 @@ __global__ void k_bounding_algorithm(Point2D * points,int n,int k,int *finalArea
 		if(totalpoints>=k)
                 {
 			area=getArea(Rpoints,n,leftEdge,bottomEdge,&totalpoints);
+			free(Rpoints);
             		sortedArea(area,&totalpoints);
-			int kVal=atomicMin(finalArea,area[k-1]);
+			atomicMin(finalArea,area[k-1]);
+			free(area);
 		}
 	}
-	if(threadIdx.x==0)
-	{
-		free(Rpoints);
-		free(area);
-	}
-    }
+   } 
 
 }
 
 int main(void)
 {
     cudaError_t err = cudaSuccess;
-    cudaEvent_t seq_start,seq_stop;    
+    //cudaEvent_t seq_start,seq_stop;    
 
-    int n=0;
-    int k=0;
-    
-    printf("\nEnter Number of Points in plane(n):");
+   int n=0;
+   int k=0;
+
+
+   printf("\nEnter Number of Points in plane(n = 2-%d):",maxWIDTH);
     fflush(stdin);
     scanf("%d",&n);
-    printf("\nEnter Number of Points insie square(k):");
+    if(n<=0 || n > maxWIDTH)
+	{
+		printf("\nmaxWIDTH value is %d,Please re run and enter n value from %d to %d",maxWIDTH,2,maxWIDTH);
+		exit(0);
+	}
+    printf("\nEnter Number of Points inside square(k) in range from %d to  %d:\n",1,n);
     fflush(stdin);
-    scanf("%d",&k);
-
-   int *h_minArea=(int*)malloc(sizeof(int));
-	*h_minArea=INT_MAX;;
+    scanf("%d",&k);    
+    if(k<=0 || k>n)
+	{
+		printf("\n n value is %d,Please re run and enter k value from %d to %d\n",n,2,n);
+                exit(0);
+	}
+   int *h_minArea=NULL;
     
-    cudaEventCreate(&seq_start);
-    cudaEventCreate(&seq_stop);
+   // cudaEventCreate(&seq_start);
+   // cudaEventCreate(&seq_stop);
 
     Point2D *h_points = (Point2D *)malloc(n*sizeof(Point2D));
 
@@ -262,6 +259,20 @@ int main(void)
         fprintf(stderr, "Failed to allocate host vectors!\n");
         exit(EXIT_FAILURE);
     }
+
+    Point2D *h_sortedX = (Point2D *)malloc(maxWIDTH*sizeof(Point2D));
+    if (h_sortedX == NULL)
+    {
+        fprintf(stderr, "Failed to allocate sorted X host vectors!\n");
+        exit(EXIT_FAILURE);
+    }
+    Point2D *h_sortedY = (Point2D *)malloc(maxWIDTH*sizeof(Point2D));
+    if (h_sortedY == NULL)
+    {
+        fprintf(stderr, "Failed to allocate sorted Y host vectors!\n");
+        exit(EXIT_FAILURE);
+    }
+
 
     getRandomInputPoints(n,h_points);
 
@@ -286,11 +297,10 @@ int main(void)
         exit(EXIT_FAILURE);
     }
     
-
-   int *d_minArea = NULL;
+    int *d_minArea = NULL;
     err = cudaMalloc((void**)&d_minArea,sizeof(int));
 
- if (err != cudaSuccess)
+    if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to allocate device vector A (error code %s)!\n", cudaGetErrorString(err));
         exit(EXIT_FAILURE);
@@ -305,22 +315,96 @@ int main(void)
     }
 
 
-    int blocksPerGrid = 3;
+    Point2D *d_sortedX = NULL;
+    err = cudaMalloc((void**)&d_sortedX,n*sizeof(Point2D));
+
+    if (err != cudaSuccess)
+    {
+        fprintf(stderr, "Failed to allocate device sortedX (error code %s)!\n", cudaGetErrorString(err));
+        exit(EXIT_FAILURE);
+    }
+    Point2D *d_sortedY = NULL;
+    err = cudaMalloc((void**)&d_sortedY,n*sizeof(Point2D));
+
+    if (err != cudaSuccess)
+    {
+        fprintf(stderr, "Failed to allocate device sortedY (error code %s)!\n", cudaGetErrorString(err));
+        exit(EXIT_FAILURE);
+    }
+
+    err = cudaMemcpy(d_sortedX,h_points,n*sizeof(Point2D),cudaMemcpyHostToDevice);
+
+    if (err != cudaSuccess)
+    {
+        fprintf(stderr, "Failed to copy minArea from host to device (error code %s)!\n", cudaGetErrorString(err));
+        exit(EXIT_FAILURE);
+    }
+
+    err = cudaMemcpy(d_sortedY,h_points,n*sizeof(Point2D),cudaMemcpyHostToDevice);
+
+    if (err != cudaSuccess)
+    {
+        fprintf(stderr, "Failed to copy minArea from host to device (error code %s)!\n", cudaGetErrorString(err));
+        exit(EXIT_FAILURE);
+    }
+
+
+   // cudaEventRecord(seq_start);
+    qsort<<<1,1,0>>>(d_sortedX,0,n-1,1);
+    qsort<<<1,1,0>>>(d_sortedY,0,n-1,0);
+
+    err = cudaMemcpy(h_sortedX,d_sortedX,n*sizeof(Point2D),cudaMemcpyDeviceToHost);
+
+    if (err != cudaSuccess)
+    {
+        fprintf(stderr, "Failed to copy minArea from host to device (error code %s)!\n", cudaGetErrorString(err));
+        exit(EXIT_FAILURE);
+    }
+
+    err = cudaMemcpy(h_sortedY,d_sortedY,n*sizeof(Point2D),cudaMemcpyDeviceToHost);
+
+    if (err != cudaSuccess)
+    {
+        fprintf(stderr, "Failed to copy minArea from host to device (error code %s)!\n", cudaGetErrorString(err));
+        exit(EXIT_FAILURE);
+    }
+
+
+    err = cudaMemcpyToSymbol(sortedX,h_sortedX,n*sizeof(Point2D));
+
+    if (err != cudaSuccess)
+    {
+        fprintf(stderr, "Failed to copy sortedX from host to device (error code %s)!\n", cudaGetErrorString(err));
+        exit(EXIT_FAILURE);
+    }
+
+    err = cudaMemcpyToSymbol(sortedY,h_sortedY,n*sizeof(Point2D));
+
+    if (err != cudaSuccess)
+    {
+        fprintf(stderr, "Failed to copy sortedY from host to device (error code %s)!\n", cudaGetErrorString(err));
+        exit(EXIT_FAILURE);
+    }
+ 
+   cudaDeviceSynchronize();
+ 
+    int b=(n-k+1); 
+    int blocksPerGrid = ((b*b)/1024)+1;
     dim3 threadsPerBlock (1024,1,1);
     printf("CUDA kernel launch with %d blocks of 1024 threads\n", blocksPerGrid);
-    cudaEventRecord(seq_start);
+  //  cudaEventRecord(seq_start);
     k_bounding_algorithm<<<blocksPerGrid,threadsPerBlock>>>(d_points,n,k,d_minArea);
-    cudaEventRecord(seq_stop);
-    cudaEventSynchronize(seq_stop);
-    float seq_milliseconds = 0;
-    err = cudaEventElapsedTime(&seq_milliseconds, seq_start, seq_stop);
+   // cudaEventRecord(seq_stop);
+   // cudaEventSynchronize(seq_stop);
+    //float seq_milliseconds = 0;
+    //err = cudaEventElapsedTime(&seq_milliseconds, seq_start, seq_stop);
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to calculate elapse time (error code %s)!\n", cudaGetErrorString(err));
         exit(EXIT_FAILURE);
     }
     
-    printf("The elapsed time is %.2f ms\n", seq_milliseconds);
+  //  printf("The elapsed time is %.2f ms\n", seq_milliseconds);
 
     err = cudaGetLastError();
 
@@ -337,7 +421,7 @@ int main(void)
         exit(EXIT_FAILURE);
      }
     
-    printf("\n%d\n",*h_minArea);
+    printf("\nMinimum Area of Square containing %d points out of %d is : %d\n",k,n,*h_minArea);
     
     err = cudaFree(d_minArea);
 
@@ -364,7 +448,8 @@ int main(void)
         fprintf(stderr, "Failed to deinitialize the device! error=%s\n", cudaGetErrorString(err));
         exit(EXIT_FAILURE);
     }
-
+    cudaFree(d_sortedX);
+    cudaFree(d_sortedY);
     return 0;
 }
 
